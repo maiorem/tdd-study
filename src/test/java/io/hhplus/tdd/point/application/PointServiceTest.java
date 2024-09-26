@@ -245,8 +245,8 @@ public class PointServiceTest {
         @Test
         public void 포인트_동일유저_동시사용_포인트_부족한_경우() throws InterruptedException {
             //given
-            long amount = 20000;
-            pointService.charge(1L, 3000);
+            long amount = 5000;
+            pointService.charge(1L, 10000);
 
             int threadCount = 3;
 
@@ -278,7 +278,7 @@ public class PointServiceTest {
 
             //then
             UserPoint userPoint = pointService.getPointById(1L);
-            assertEquals(3000, userPoint.point());
+            assertEquals(0, userPoint.point());
         }
     }
 
