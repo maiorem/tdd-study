@@ -25,7 +25,7 @@ public class PointController {
     public UserPoint point(
             @PathVariable long id
     ) {
-        return pointService.point(id);
+        return pointService.getPointById(id);
     }
 
     /**
