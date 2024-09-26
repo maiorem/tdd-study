@@ -15,6 +15,10 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -174,5 +178,111 @@ public class PointServiceTest {
 
         }
     }
+
+    @Nested
+    @DisplayName("동시성 테스트")
+    class SyncTest {
+
+        @Test
+        void 포인트_동일유저_동시충전() throws InterruptedException {
+            //given
+            pointService.charge(1L, 10000);
+
+            //when
+            Runnable A = () -> {
+                UserPoint chargePoint = pointService.charge(1L, 1000);
+                System.out.println("point runable A " + chargePoint.point());
+            };
+
+            Runnable B = () -> {
+                UserPoint chargePoint = pointService.charge(1L, 2000);
+                System.out.println("point runable B " + chargePoint.point());
+            };
+
+            CompletableFuture.runAsync(A).thenCompose((a) -> CompletableFuture.runAsync(B)).join();
+
+            Thread.sleep(1000);
+
+            //then
+            UserPoint userPoint = pointService.getPointById(1L);
+            assertEquals(10000 + 1000 + 2000, userPoint.point());
+        }
+
+        @Test
+        void 포인트_동일유저_동시사용() throws InterruptedException {
+            //given
+            pointService.charge(1L, 10000);
+
+            //when
+            Runnable A = () -> {
+                try {
+                    UserPoint usingPoint = pointService.use(1L, 1000);
+                    System.out.println("point runable A " + usingPoint.point());
+                } catch (PointShortageException e) {
+                    throw new RuntimeException(e);
+                }
+            };
+
+            Runnable B = () -> {
+                try {
+                    UserPoint usingPoint = pointService.use(1L, 500);
+                    System.out.println("point runable B " + usingPoint.point());
+                } catch (PointShortageException e) {
+                    throw new RuntimeException(e);
+                }
+            };
+
+            CompletableFuture.runAsync(A).thenCompose((a) -> CompletableFuture.runAsync(B)).join();
+
+            Thread.sleep(1000);
+
+            //then
+            UserPoint userPoint = pointService.getPointById(1L);
+            assertEquals(10000 - 1000 - 500, userPoint.point());
+        }
+
+
+        @Test
+        public void 포인트_동일유저_동시사용_포인트_부족한_경우() throws InterruptedException {
+            //given
+            long amount = 3000;
+            pointService.charge(1L, amount);
+
+            int threadCount = 3;
+
+            ExecutorService executorService = Executors.newFixedThreadPool(3);
+
+            CountDownLatch latch = new CountDownLatch (threadCount);
+
+            //when
+            for (int i = 0; i < threadCount; i++) {
+                executorService.submit(() -> {
+                    try {
+                        synchronized (this)
+                        {
+                            UserPoint userPoint = pointService.getPointById(1L);
+
+                            if(userPoint.point() < amount) {
+                                throw new PointShortageException("포인트가 부족합니다.");
+                            }
+
+                            pointService.use(1L, 20000);
+                        }
+
+                    } catch (PointShortageException e) {
+                        throw new RuntimeException(e);
+                    } finally {
+                        latch.countDown();
+                    }
+                });
+            }
+            latch.await();
+
+            //then
+            UserPoint userPoint = pointService.getPointById(1L);
+            assertEquals(3000, userPoint.point());
+        }
+    }
+
 
 }
