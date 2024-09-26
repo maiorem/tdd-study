@@ -1,5 +1,7 @@
 package io.hhplus.tdd.point.application;
 
+import io.hhplus.tdd.common.exception.CanNotChargePointException;
+import io.hhplus.tdd.common.exception.PointShortageException;
 import io.hhplus.tdd.database.PointHistoryTable;
 import io.hhplus.tdd.database.UserPointTable;
 import io.hhplus.tdd.point.component.PointHistory;
@@ -46,24 +48,24 @@ public class PointServiceTest {
             userPointTable.insertOrUpdate(1L, 10000);
 
             //when
-            UserPoint testPoint = pointService.point(1L);
+            UserPoint testPoint = pointService.getPointById(1L);
 
             //then
             assertEquals(10000, testPoint.point());
-
         }
 
         @Test
-        void ID가_존재하지_않으면_조회_실패() {
+        void ID가_존재하지_않으면_빈_값_반환() {
             //given
             userPointTable.insertOrUpdate(1L, 10000);
 
             //when
-            UserPoint testPoint = pointService.point(2L);
+            UserPoint testPoint = pointService.getPointById(2L);
 
             //then
-            assertEquals(10000, testPoint.point());
+            assertEquals(0, testPoint.point());
        }
+
 
     }
 
@@ -110,35 +112,32 @@ public class PointServiceTest {
     class ChargePoint {
 
         @Test
-        void 최소_충전_포인트_미달_시_충전_실패() {
+        void 충전_포인트가_음수면_충전_실패() {
             //given
+            userPointTable.insertOrUpdate(1L, 1000);
 
             //when
+            CanNotChargePointException exception = assertThrows(CanNotChargePointException.class, () -> {
+                pointService.charge(1L, -100);
+            });
 
             //then
-
+           assertEquals("충전 포인트는 0 이하가 될 수 없습니다.", exception.getMessage());
 
         }
 
-
-        @Test
-        void 충전_가능_포인트_초과_시_충전_실패() {
-            //given
-
-            //when
-
-            //then
-
-        }
 
         @Test
         void 포인트_충전_성공() {
             //given
+            userPointTable.insertOrUpdate(1L, 1000);
 
             //when
+            pointService.charge(1L, 20000);
 
             //then
-
+            UserPoint userPoint = pointService.getPointById(1L);
+            assertEquals(21000, userPoint.point());
         }
 
     }
@@ -150,31 +149,28 @@ public class PointServiceTest {
 
         @Test
         void 사용_금액이_잔고보다_많으면_사용_실패() {
-            //given
+            userPointTable.insertOrUpdate(1L, 1000);
 
             //when
+            PointShortageException exception = assertThrows(PointShortageException.class, () -> {
+                pointService.use(1L, 2000);
+            });
 
             //then
-
-        }
-
-        @Test
-        void 사용_가능_잔고_초과하면_사용_실패() {
-            //given
-
-            //when
-
-            //then
-
+            assertEquals("포인트가 부족합니다.", exception.getMessage());
         }
 
         @Test
         void 포인트_사용_성공() {
             //given
+            userPointTable.insertOrUpdate(1L, 1000);
 
             //when
+            pointService.use(1L, 600);
 
             //then
+            UserPoint userPoint = pointService.getPointById(1L);
+            assertEquals(400, userPoint.point());
 
         }
     }
