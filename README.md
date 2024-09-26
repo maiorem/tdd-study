@@ -123,7 +123,7 @@
 ### 결과 분석 및 회고
 - case 1에서 동일한 유저에 대한 포인트 동시 충전 시 모두 충전 완료됨을 확인.     
 - case 2에서 동일한 유저에 대한 포인트 동시 사용 시 모두 정상 사용 완료됨을 확인.    
-- case 3에서 10000원 충전되어 있는 유저에 대해 5000원 포인트 사용이 세번 동시에 이루어 진 경우, 두번만 성공하고 세번째 실패 시도 이전 포인트가 유지됨을 확인함.
+- case 3에서 10000원 충전되어 있는 유저에 대해 5000원 포인트 사용이 세번 동시에 이루어 진 경우, 두번만 성공하고 세번째 실패 시도 이전 포인트가 유지됨을 확인함.         
 ![](https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdn%2FcSub6M%2FbtsJNBA32Z2%2FN2NvaVkceeZvq5RWWZLwaK%2Fimg.png)
 
 
