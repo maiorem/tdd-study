@@ -79,11 +79,11 @@
   - 유저 A의 포인트 사용이 동시에 일어났으나 잔액 부족으로 실패하면 -> 사용은 중지되고 실패 이전의 포인트가 유지되어야 함.            
  
     ```java
-       @Test
+        @Test
         public void 포인트_동일유저_동시사용_포인트_부족한_경우() throws InterruptedException {
             //given
-            long amount = 3000;
-            pointService.charge(1L, amount);
+            long amount = 5000;
+            pointService.charge(1L, 10000);
 
             int threadCount = 3;
 
@@ -98,12 +98,10 @@
                         synchronized (this)
                         {
                             UserPoint userPoint = pointService.getPointById(1L);
-
                             if(userPoint.point() < amount) {
                                 throw new PointShortageException("포인트가 부족합니다.");
                             }
-
-                            pointService.use(1L, 20000);
+                            pointService.use(1L, amount);
                         }
 
                     } catch (PointShortageException e) {
@@ -117,8 +115,17 @@
 
             //then
             UserPoint userPoint = pointService.getPointById(1L);
-            assertEquals(3000, userPoint.point());
+            assertEquals(0, userPoint.point());
         }
     }
   ```
-### 결과
+
+### 결과 분석 및 회고
+- case 1에서 동일한 유저에 대한 포인트 동시 충전 시 모두 충전 완료됨을 확인.     
+- case 2에서 동일한 유저에 대한 포인트 동시 사용 시 모두 정상 사용 완료됨을 확인.    
+- case 3에서 10000원 충전되어 있는 유저에 대해 5000원 포인트 사용이 세번 동시에 이루어 진 경우, 두번만 성공하고 세번째 실패 시도 이전 포인트가 유지됨을 확인함.         
+![](https://img1.daumcdn.net/thumb/R1280x0/?scode=mtistory2&fname=https%3A%2F%2Fblog.kakaocdn.net%2Fdn%2FcSub6M%2FbtsJNBA32Z2%2FN2NvaVkceeZvq5RWWZLwaK%2Fimg.png)
+
+
+- 이번 프로젝트의 케이스는 동일한 유저에 대한 동시 접근을 제어하기에 비교적 케이스가 단순하고 수월하였으나, 그럼에도 다양한 동시성 제어 방식, 이를 테스트 하는 방식에 대한 학습 필요성을 느낌.
+
